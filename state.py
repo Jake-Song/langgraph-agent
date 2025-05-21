@@ -7,3 +7,4 @@ from langgraph.graph.message import AnyMessage, add_messages
 
 class State(TypedDict):
     messages: Annotated[List[AnyMessage], add_messages]
+    interrupt_response: str

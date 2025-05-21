@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
 from typing import Annotated
 from langchain_tavily import TavilySearch
-from langchain_core.messages import BaseMessage
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
@@ -30,7 +29,7 @@ async def human_node(state: State, config: RunnableConfig) -> Dict[str, Any]:
     # Define the interrupt request
     action_request = ActionRequest(
         action="Decide Action",
-        args={"request": "What action to take?"},
+        args={"args": "Choose what to do next"},
     )
 
     interrupt_config = HumanInterruptConfig(
@@ -105,3 +104,4 @@ graph_builder.add_edge("tools", "chatbot")
 graph_builder.add_edge("chatbot", "human_node")
 
 graph = graph_builder.compile()
+graph.name = "Agent Inbox Example"  
