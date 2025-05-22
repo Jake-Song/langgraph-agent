@@ -1,3 +1,7 @@
+import streamlit as st
+
+# --- LangGraph Setup ---
+
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
 from langchain_tavily import TavilySearch
@@ -121,3 +125,64 @@ graph_builder.add_edge("human_node", END)
 
 graph = graph_builder.compile()
 graph.name = "Agent Inbox Example"  
+
+
+# --- Streamlit UI ---
+st.set_page_config(page_title="LangGraph & Streamlit Chat", layout="centered", initial_sidebar_state="auto")
+
+st.title("💬 Simple Chatbot powered by LangGraph & Streamlit")
+st.markdown("""
+This is a basic demonstration of a chatbot built using LangGraph for the backend logic 
+and Streamlit for the user interface. 
+Enter your message below and the LangGraph agent will respond.
+""")
+
+# Initialize chat history in Streamlit's session state if it doesn't exist
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "assistant", "content": "Hi! I'm a simple LangGraph agent. Ask me something like 'hello', 'tell me a joke', or 'what is LangGraph?'"}
+    ]
+
+# Display existing chat messages from session state
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# Get user input from the chat interface
+if user_query := st.chat_input("Your message:", key="user_input_field"):
+    # Add user message to chat history and display it
+    st.session_state.messages.append({"role": "user", "content": user_query})
+    with st.chat_message("user"):
+        st.markdown(user_query)
+
+    # Prepare the initial state for the LangGraph application
+    # The keys in this dictionary must match the keys defined in the GraphState TypedDict.
+    initial_state_for_graph = {"messages": [user_query], "interrupt_response": ""} 
+
+    # Invoke the LangGraph app with the initial state
+    # The graph execution will update the state based on the defined nodes and edges.
+    try:
+        # `invoke` runs the graph from the entry point until it reaches END or a stopping condition.
+        final_state = graph.invoke(initial_state_for_graph)
+        assistant_response = final_state.get("agent_response", "Sorry, I encountered an issue and couldn't formulate a response.")
+    except Exception as e:
+        assistant_response = f"An error occurred while processing your request: {str(e)}"
+        st.error(f"Error invoking LangGraph: {e}") # Show error in UI for better debugging
+
+    # Add assistant's response to chat history and display it
+    st.session_state.messages.append({"role": "assistant", "content": assistant_response})
+    with st.chat_message("assistant"):
+        st.markdown(assistant_response)
+
+# Optional: Add a footer or some information
+st.sidebar.header("About")
+st.sidebar.info(
+    "This app demonstrates a basic integration of LangGraph for stateful agent logic "
+    "and Streamlit for building the interactive web UI. "
+    "The agent's responses are currently rule-based."
+)
+st.sidebar.markdown("---")
+st.sidebar.markdown("To run this app:")
+st.sidebar.code("pip install streamlit langgraph")
+st.sidebar.code("streamlit run your_script_name.py")
+
